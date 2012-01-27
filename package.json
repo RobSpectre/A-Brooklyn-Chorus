@@ -1,0 +1,13 @@
+{
+  "name": "a-brooklyn-chorus",
+  "description": "An interactive SMS-powered installation piece created at Art
+  Hack Day - Brooklyn, New York 2012",
+  "author": "Rob Spectre <rob.spectre@gmail.com>",
+  "dependencies": {
+    "express": "2.3.x",
+    "twilio": "0.4.x",
+    "redis": "0.7.x",
+    "socket.io": "0.8.x"
+  },
+  "engine": "node >= 0.6.8"
+}
