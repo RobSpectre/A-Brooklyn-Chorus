@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<!--[if lt IE 7 ]><html class="ie ie6" lang="en"> <![endif]-->
+<!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
+<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!--><html lang="en"> <!--<![endif]-->
+<head>
+    <!-- Page info -->
+	<meta charset="utf-8">
+    <title>A Brookyn Chorus</title>
+	<meta charset="utf-8" /> 
+	<meta name="description" content="An interactive SMS-powered installation
+    piece.  Built at Art Hack Day 2012 - Brooklyn, New York." /> 
+    <meta name="author" content="Rob Spectre" />
+	<meta name="keywords" content="a brooklyn chorus, brooklyn chorus, art, hack
+    rob spectre, brooklyn hacker, art hack day 2012" /> 
+
+    <!-- Mobile -->
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <!-- CSS -->
+	<link rel="stylesheet" href="/static/stylesheets/base.css">
+	<link rel="stylesheet" href="/static/stylesheets/skeleton.css">
+	<link rel="stylesheet" href="/static/stylesheets/layout.css">
+	<link rel="stylesheet" href="/static/stylesheets/index.css">
+
+    <!-- Sharing -->
+	<link rel="shortcut icon" href="/static/images/favicon.ico">
+	<link rel="apple-touch-icon" href="/static/images/apple-touch-icon.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="/static/images/apple-touch-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="/static/images/apple-touch-icon-114x114.png">
+	<meta property="og:title" content="A Brooklyn Chorus." /> 
+	<meta property="og:description" content="An interactive SMS-powered
+    installation piece.  Built at Art Hack Day 2012 - Brooklyn, New York." />
+  	<meta property="og:image" content="" /> 
+	</script>  
+</head>
+<body>
+    <div class="container">
+        <div id="canvas_container"></div>
+    </div>
+<!-- JS -->
+<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/socket.io/0.8.4/socket.io.min.js"></script>
+<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/raphael/2.0.0/raphael-min.js"></script>
+<script type="text/javascript">
+window.onload = function() {  
+    var paper = new Raphael(
+            document.getElementById('canvas_container'), 500, 500
+            );
+
+    var socket = io.connect('http://localhost:5000');
+    socket.on('creation', function(data) {
+        paper.circle(100, 100, 80);
+    }
+}
+</script>
+</body>
+</html>
