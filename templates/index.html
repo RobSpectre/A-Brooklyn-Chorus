@@ -32,7 +32,6 @@
 	<meta property="og:description" content="An interactive SMS-powered
     installation piece.  Built at Art Hack Day 2012 - Brooklyn, New York." />
   	<meta property="og:image" content="" /> 
-	</script>  
 </head>
 <body>
     <div class="container">
@@ -44,13 +43,19 @@
 <script type="text/javascript">
 window.onload = function() {  
     var paper = new Raphael(
-            document.getElementById('canvas_container'), 500, 500
-            );
+        document.getElementById('canvas_container'), 500, 500
+    );
 
-    var socket = io.connect('http://localhost:5000');
-    socket.on('creation', function(data) {
-        paper.circle(100, 100, 80);
-    }
+    var client = io.connect('http://localhost:5000');
+    
+    client.on('connect', function(){
+        console.log("Connected.");
+        client.emit({channel: 'chorus', action: 'subscribe'});
+    });
+
+    client.on('message', function(channel, data){
+        console.log(data);
+    });
 }
 </script>
 </body>
