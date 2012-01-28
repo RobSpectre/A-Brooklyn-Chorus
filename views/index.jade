@@ -25,40 +25,104 @@ html
   script(type="text/javascript", src="http://cdnjs.cloudflare.com/ajax/libs/socket.io/0.8.4/socket.io.min.js")
   script(type="text/javascript", src="http://cdnjs.cloudflare.com/ajax/libs/raphael/2.0.0/raphael-min.js")
   script(type="text/javascript")
-    var nodes = [];
+    var nodes = ["test"];
     var amp_multiplier = 50;
+    var multiple_bonus = 1.3;
       
-    function createNewNode(node_data, paper) {
+    function createNewNode(msg_data, paper) {
       var container = $("#canvas_container");
       var x = Math.floor((Math.random() * (container.width() / 2) +
       container.width() / 4));
       var y = Math.floor((Math.random() * (container.height() / 2) +
       container.height() / 4));
-      if (node_data.sentiment.docSentiment.score === undefined) {
+      if (msg_data.sentiment.docSentiment.score === undefined) {
         var amp = 30;
         var attributes = {fill: '#666666', stroke: '#ffffff', 'stroke-width':
-        5, r: amp};
-      } else if (node_data.sentiment.docSentiment.score < 0) {
-        var amp = (-1 * node_data.sentiment.docSentiment.score) * amp_multiplier;
+        (amp / 5), r: amp};
+        var new_score = 0;
+      } else if (msg_data.sentiment.docSentiment.score < 0) {
+        var amp = (-1 * msg_data.sentiment.docSentiment.score) * amp_multiplier;
         var attributes = {fill: '#FF0000', stroke: '#0000FF', 'stroke-width':
-        5, r: amp};
+        (amp / 5), r: amp};
+        var new_score = msg_data.sentiment.docSentiment.score;
       } else {
-        var amp = node_data.sentiment.docSentiment.score * amp_multiplier;
+        var amp = msg_data.sentiment.docSentiment.score * amp_multiplier;
         var attributes = {fill: '#0000FF', stroke: '#FF0000', 'stroke-width':
-        5, r: amp};
+        (amp / 5), r: amp};
+        var new_score = msg_data.sentiment.docSentiment.score;
       }
-      var circle = paper.circle(x, y, 0);
-      circle.animate(attributes, 2000, 'bounce');
-      circle.score = node_data.sentiment.docSentiment.score;
-      circle.id = node_data.sms.From;
-      return circle;
+      var node= paper.circle(x, y, 0);
+      node.animate(attributes, 500, 'bounce');
+      node.score = new_score;
+      node.id = msg_data.sms.From;
+      setFadeout(node);
+      return node;
     } 
 
+    function setFadeout(node) {
+      if (node.fadeout !== undefined) {
+        console.log("Clearing fadeout...");
+        clearTimeout(node.fadeout);
+      }
+      node.fadeout = setTimeout(function() {
+        node.animate({opacity: 0}, 5000,'ease-out');
+        setTimeout(function() {
+          node.remove();
+        }, 5000);
+      }, 5000);
+    }
+
+    function alterNode(msg_data, node) {
+      if (msg_data.sentiment.docSentiment.score === undefined) {
+        var amp = -2;
+        var new_score = 0;
+      } else {
+        var new_score = node.score + msg_data.sentiment.docSentiment.score;
+        var delta = node.score - new_score;
+        if ((delta * new_score) > 0) {
+          // Amplify polarity
+          var amp = msg_data.sentiment.docSentiment.score * amp_multiplier *
+          multiple_bonus;
+          if (amp < 0) {
+            amp = amp * -1;
+          }
+          amp = node.attrs.r + amp;
+        } else {
+          // Reduce polarity
+          var amp = msg_data.sentiment.docSentiment.score * amp_multiplier;
+          if (amp < 0) {
+            amp = amp * -1;
+          }
+          amp = node.attrs.r - amp;
+        }
+        var amp = (-1 * msg_data.sentiment.docSentiment.score) * amp_multiplier
+        * multiple_bonus;
+      } 
+      var attributes = {
+        r: (node.attrs.r) + amp
+      }
+      node.animate(attributes, 500, 'bounce');
+      node.score = new_score;
+      setFadeout(node);
+      return node;
+    }
+
+    function calcColors(sentiment_score) {
+      
+    }
+
+    function getNode(id, nodes) {
+      for (i in nodes) {
+        if (id == nodes[i].id) {
+          return nodes[i];
+        }
+      }
+      return false;
+    }
+
     $('document').ready(function() {  
-      var container = $("canvas_container");
       var paper = new Raphael(
-        document.getElementById('canvas_container'), container.width(),
-        container.height()
+        document.getElementById('canvas_container'), "100%", "100%"
       );
       var socket = io.connect('http://localhost:5000');
      
@@ -69,7 +133,24 @@ html
 
       socket.on('message', function(msg){
         console.log("Received message for node: " + msg.data.sms.From);
-        node = createNewNode(msg.data, paper); 
-        nodes.push(node);
+
+        // Generate or alter node.
+        var node = getNode(msg.data.sms.From, nodes);
+        if (!node) {
+          console.log("Node does not exist - creating new one...");
+          var node = createNewNode(msg.data, paper); 
+          nodes.push(node);
+        } else {
+          console.log("Node exists - altering...");
+          var node = alterNode(msg.data, node);
+        }
+
+        // Display text.
+        console.log(node);
+        var t = paper.text(node.attrs.cx, (node.attrs.cy - node.attrs.r - 20),
+        msg.data.sms.Body)
+          .attr({'font-size': node.attrs.r, stroke: node.attrs.fill, fill:
+          node.attrs.fill})
+          .animate({opacity: 0}, 4000, 'ease-in');
       });
     });
