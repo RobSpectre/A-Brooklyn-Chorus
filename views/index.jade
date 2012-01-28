@@ -20,16 +20,46 @@ html
     link(property="og:description", content="An interactive SMS-powered installation piece.  Built at Art Hack Day 2012 - Brooklyn, New York.")
     link(property="og:image", content="")
   body
-    div.container
-      div#canvas_container
+  div#canvas_container
+  script(type="text/javascript", src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js")
   script(type="text/javascript", src="http://cdnjs.cloudflare.com/ajax/libs/socket.io/0.8.4/socket.io.min.js")
   script(type="text/javascript", src="http://cdnjs.cloudflare.com/ajax/libs/raphael/2.0.0/raphael-min.js")
   script(type="text/javascript")
-    window.onload = function() {  
+    var nodes = [];
+    var amp_multiplier = 50;
+      
+    function createNewNode(node_data, paper) {
+      var container = $("#canvas_container");
+      var x = Math.floor((Math.random() * (container.width() / 2) +
+      container.width() / 4));
+      var y = Math.floor((Math.random() * (container.height() / 2) +
+      container.height() / 4));
+      if (node_data.sentiment.docSentiment.score === undefined) {
+        var amp = 30;
+        var attributes = {fill: '#666666', stroke: '#ffffff', 'stroke-width':
+        5, r: amp};
+      } else if (node_data.sentiment.docSentiment.score < 0) {
+        var amp = (-1 * node_data.sentiment.docSentiment.score) * amp_multiplier;
+        var attributes = {fill: '#FF0000', stroke: '#0000FF', 'stroke-width':
+        5, r: amp};
+      } else {
+        var amp = node_data.sentiment.docSentiment.score * amp_multiplier;
+        var attributes = {fill: '#0000FF', stroke: '#FF0000', 'stroke-width':
+        5, r: amp};
+      }
+      var circle = paper.circle(x, y, 0);
+      circle.animate(attributes, 2000, 'bounce');
+      circle.score = node_data.sentiment.docSentiment.score;
+      circle.id = node_data.sms.From;
+      return circle;
+    } 
+
+    $('document').ready(function() {  
+      var container = $("canvas_container");
       var paper = new Raphael(
-          document.getElementById('canvas_container'), 500, 500
+        document.getElementById('canvas_container'), container.width(),
+        container.height()
       );
- 
       var socket = io.connect('http://localhost:5000');
      
       socket.on('connect', function(){
@@ -38,6 +68,8 @@ html
       });
 
       socket.on('message', function(msg){
-        console.log(msg.channel + ": " + msg.data);
+        console.log("Received message for node: " + msg.data.sms.From);
+        node = createNewNode(msg.data, paper); 
+        nodes.push(node);
       });
-    }
+    });
