@@ -21,6 +21,8 @@ html
     link(property="og:image", content="")
   body
   div#canvas_container
+  div#footer
+    h1 Text HELP to 
   script(type="text/javascript", src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js")
   script(type="text/javascript", src="http://cdnjs.cloudflare.com/ajax/libs/socket.io/0.8.4/socket.io.min.js")
   script(type="text/javascript", src="http://cdnjs.cloudflare.com/ajax/libs/raphael/2.0.0/raphael-min.js")
@@ -37,22 +39,18 @@ html
       container.height() / 4));
       if (msg_data.sentiment.docSentiment.score === undefined) {
         var amp = 30;
-        var attributes = {fill: '#666666', stroke: '#ffffff', 'stroke-width':
-        (amp / 5), r: amp};
         var new_score = 0;
       } else if (msg_data.sentiment.docSentiment.score < 0) {
         var amp = (-1 * msg_data.sentiment.docSentiment.score) * amp_multiplier;
-        var attributes = {fill: '#FF0000', stroke: '#0000FF', 'stroke-width':
-        (amp / 5), r: amp};
         var new_score = msg_data.sentiment.docSentiment.score;
       } else {
         var amp = msg_data.sentiment.docSentiment.score * amp_multiplier;
-        var attributes = {fill: '#0000FF', stroke: '#FF0000', 'stroke-width':
-        (amp / 5), r: amp};
         var new_score = msg_data.sentiment.docSentiment.score;
       }
+      var colors = calcSentimentColors(msg_data.sentiment.docSentiment.score);
       var node= paper.circle(x, y, 0);
-      node.animate(attributes, 500, 'bounce');
+      node.animate({fill: colors['fill'], stroke: colors['stroke'], 'stroke-width':
+        (amp/5), r: amp}, 500, 'bounce');
       node.score = new_score;
       node.id = msg_data.sms.From;
       setFadeout(node);
@@ -60,16 +58,17 @@ html
     } 
 
     function setFadeout(node) {
+      var fadeout_time = 300000;
       if (node.fadeout !== undefined) {
         console.log("Clearing fadeout...");
         clearTimeout(node.fadeout);
       }
       node.fadeout = setTimeout(function() {
-        node.animate({opacity: 0}, 5000,'ease-out');
+        node.animate({opacity: 0}, fadeout_time, 'ease-out');
         setTimeout(function() {
           node.remove();
-        }, 5000);
-      }, 5000);
+        }, fadeout_time);
+      }, fadeout_time);
     }
 
     function alterNode(msg_data, node) {
@@ -86,29 +85,47 @@ html
           if (amp < 0) {
             amp = amp * -1;
           }
-          amp = node.attrs.r + amp;
         } else {
           // Reduce polarity
           var amp = msg_data.sentiment.docSentiment.score * amp_multiplier;
           if (amp < 0) {
             amp = amp * -1;
           }
-          amp = node.attrs.r - amp;
         }
-        var amp = (-1 * msg_data.sentiment.docSentiment.score) * amp_multiplier
-        * multiple_bonus;
-      } 
-      var attributes = {
-        r: (node.attrs.r) + amp
       }
-      node.animate(attributes, 500, 'bounce');
+
+      if (amp < 0) {
+        // Node switched polarity
+        amp = amp * -1;
+      }
+
+      // Minimum size
+      if (amp < 20) {
+        amp = 20;
+      }
+      var colors = calcSentimentColors(new_score); 
+      node.animate({fill: colors['fill'], stroke: colors['stroke'], r: amp}, 500, 'bounce');
       node.score = new_score;
       setFadeout(node);
       return node;
     }
 
-    function calcColors(sentiment_score) {
-      
+    function calcSentimentColors(sentiment_score) {
+      if (sentiment_score == 0) {
+        return {fill: '#888888', stroke: '#666666'}
+      } else if (sentiment_score < 0) {
+        // Tinge blue
+        //return {fill: Raphael.rgb(0, 0, ((sentiment_score*-1*10) * 255)),
+        //      stroke: Raphael.rgb((sentiment_score *-1*10) * 255), 0, 0)
+        //};
+        return {fill: '#0000FF', stroke: '#FF0000'}
+      } else {
+        // Tinge red
+        //return {fill: Raphael.rgb((sentiment_score * 10) * 255), 0, 0),
+        //      stroke: Raphael.rgb(0, 0, (sentiment_score * color_multiplier +
+        //      100))};
+        return {fill: '#FF0000', stroke: '#0000FF'}
+      }
     }
 
     function getNode(id, nodes) {
